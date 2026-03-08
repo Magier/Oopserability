@@ -1,7 +1,7 @@
-FROM debian:buster
+FROM debian:bullseye-slim
 
 RUN apt-get update && \
-    apt-get install -y redis-server=5:5.0.7-2 lua5.1 && \
+    apt-get install -y --no-install-recommends redis-server=5:6.0.15-1 lua5.1 && \
     rm -rf /var/lib/apt/lists/*
 
 EXPOSE 6379
