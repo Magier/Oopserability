@@ -9,7 +9,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE: ghcr.io/${{ github.repository_owner }}/ooopservability
+  IMAGE_AGENT: ghcr.io/${{ github.repository_owner }}/ooopservability
+  IMAGE_REDIS: ghcr.io/${{ github.repository_owner }}/ooopservability-redis
 
 jobs:
   build:
@@ -32,11 +33,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
+      - name: Extract metadata (agent)
+        id: meta-agent
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE }}
+          images: ${{ env.IMAGE_AGENT }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -44,13 +45,36 @@ jobs:
             type=sha,prefix=sha-,format=short
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push
+      - name: Build and push (agent)
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-agent.outputs.tags }}
+          labels: ${{ steps.meta-agent.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata (redis)
+        id: meta-redis
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_REDIS }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push (redis)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./redis
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-redis.outputs.tags }}
+          labels: ${{ steps.meta-redis.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

