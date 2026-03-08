@@ -1,0 +1,67 @@
+# rbac.yaml — Service account and RBAC for the Ooopservability agent.
+#
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │  THE DANGEROUS PERMISSION                                               │
+# │                                                                         │
+# │  resources: ["nodes/proxy"]                                             │
+# │  verbs:     ["get"]                                                     │
+# │                                                                         │
+# │  At first glance this looks safe:  read-only, scoped to nodes, needed  │
+# │  to scrape kubelet /metrics.  In practice it is a transparent HTTP     │
+# │  tunnel to the kubelet API (port 10250) on every node.                 │
+# │                                                                         │
+# │  The kubelet API trusts the API server to have already authorised the  │
+# │  caller, so any holder of this SA token can:                           │
+# │                                                                         │
+# │    • List all pods on the node   GET  /pods                            │
+# │    • Run commands in any pod     POST /run/<ns>/<pod>/<ctr>            │
+# │    • Read kubelet config         GET  /configz                         │
+# │    • Fetch node-level metrics    GET  /metrics                         │
+# │    • Get container logs          GET  /containerLogs/<ns>/<pod>/<ctr>  │
+# └─────────────────────────────────────────────────────────────────────────┘
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ooopservability-agent
+  namespace: ooopservability
+  labels:
+    app.kubernetes.io/name: ooopservability
+automountServiceAccountToken: true   # default true — token is mounted into the pod
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ooopservability-agent
+  labels:
+    app.kubernetes.io/name: ooopservability
+rules:
+  # ── The permission that makes this dangerous ─────────────────────────────
+  # nodes/proxy: transparent HTTP tunnel to the kubelet API.
+  # GET is all you need to reach /run (exec), /pods, /configz, /metrics, etc.
+  - apiGroups: [""]
+    resources: ["nodes/proxy"]
+    verbs: ["get"]
+
+  # ── Standard read permissions an observability agent might legitimately need
+  - apiGroups: [""]
+    resources: ["nodes", "pods", "namespaces"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ooopservability-agent
+  labels:
+    app.kubernetes.io/name: ooopservability
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ooopservability-agent
+subjects:
+  - kind: ServiceAccount
+    name: ooopservability-agent
+    namespace: ooopservability

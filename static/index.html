@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ooopservability Agent</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --accent: #5b8dee;
+      --green: #3ecf8e;
+      --red: #f87171;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between; height: 56px;
+    }
+    .logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -.5px; }
+    .logo span { color: var(--accent); }
+    .badge {
+      font-size: .7rem; font-weight: 600; padding: 2px 8px;
+      border-radius: 9999px; background: #3ecf8e22; color: var(--green);
+      border: 1px solid var(--green);
+    }
+    .meta { color: var(--muted); font-size: .8rem; display: flex; gap: 1rem; }
+
+    main { max-width: 1100px; margin: 2rem auto; padding: 0 2rem; display: grid; gap: 1.5rem; }
+
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+    }
+    .card-label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .4rem; }
+    .card-value { font-size: 1.6rem; font-weight: 700; }
+    .card-value.green { color: var(--green); }
+    .card-value.blue { color: var(--accent); }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .panel-header {
+      padding: .8rem 1.2rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: .85rem; font-weight: 600;
+    }
+    .panel-body { padding: 1.2rem; }
+
+    input, textarea {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); padding: .6rem .8rem; font-family: var(--mono); font-size: .85rem;
+      width: 100%; outline: none;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    textarea { min-height: 80px; resize: vertical; }
+    button {
+      background: var(--accent); color: #fff; border: none; border-radius: 6px;
+      padding: .55rem 1.2rem; font-size: .85rem; font-weight: 600; cursor: pointer;
+      transition: opacity .15s;
+    }
+    button:hover { opacity: .85; }
+    button.danger { background: var(--red); }
+
+    .result {
+      margin-top: 1rem; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: .8rem 1rem;
+      font-family: var(--mono); font-size: .8rem; color: var(--green);
+      white-space: pre-wrap; word-break: break-all; min-height: 60px; max-height: 320px; overflow-y: auto;
+    }
+    .flex-row { display: flex; gap: .8rem; align-items: flex-start; }
+    .flex-row input { flex: 1; }
+
+    .hint { font-size: .75rem; color: var(--muted); margin-top: .5rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="logo">Ooopser<span>vability</span></div>
+    <span class="badge">● RUNNING</span>
+  </div>
+  <div class="meta">
+    <span>node: <strong>{{.NodeName}}</strong></span>
+    <span>ns: <strong>{{.Namespace}}</strong></span>
+    <span>{{.Version}}</span>
+  </div>
+</header>
+
+<main>
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Agent Status</div>
+      <div class="card-value green">Healthy</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Node</div>
+      <div class="card-value blue" style="font-size:1.1rem;padding-top:.3rem">{{.NodeName}}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Endpoints</div>
+      <div class="card-value">6</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Version</div>
+      <div class="card-value" style="font-size:1.1rem;padding-top:.3rem">{{.Version}}</div>
+    </div>
+  </div>
+
+  <!-- Log Search -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>Log Search</span>
+      <span style="color:var(--muted);font-weight:400">GET /api/v1/logs/search?q=</span>
+    </div>
+    <div class="panel-body">
+      <div class="flex-row">
+        <input id="logQuery" type="text" placeholder='error  (try: error; id)' />
+        <button onclick="searchLogs()">Search</button>
+      </div>
+      <div class="hint">Searches /var/log/ on the node for the given pattern.</div>
+      <div class="result" id="logResult">—</div>
+    </div>
+  </div>
+
+  <!-- Diagnostics / Exec -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>Diagnostics — Run Command</span>
+      <span style="color:var(--muted);font-weight:400">POST /api/v1/diagnostics/run</span>
+    </div>
+    <div class="panel-body">
+      <textarea id="execCmd" placeholder='{"command":"uptime"}'></textarea>
+      <div style="margin-top:.6rem">
+        <button class="danger" onclick="runExec()">Execute</button>
+      </div>
+      <div class="hint">Runs a diagnostic command on the node. JSON body: <code>{"command":"..."}</code></div>
+      <div class="result" id="execResult">—</div>
+    </div>
+  </div>
+
+  <!-- Fileless Upload -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>Diagnostics — Upload &amp; Run (Fileless)</span>
+      <span style="color:var(--muted);font-weight:400">POST /api/v1/diagnostics/upload</span>
+    </div>
+    <div class="panel-body">
+      <div class="flex-row">
+        <input type="file" id="uploadFile" />
+        <button class="danger" onclick="uploadExec()">Upload &amp; Exec</button>
+      </div>
+      <div class="hint">
+        Uploads a Linux ELF binary. It is written to an anonymous memory fd via
+        <code>memfd_create(2)</code> and executed from <code>/proc/self/fd/N</code> — never touching disk.
+      </div>
+      <div class="result" id="uploadResult">—</div>
+    </div>
+  </div>
+
+  <!-- Node Info -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>Node — Pod List (via kubelet proxy)</span>
+      <span style="color:var(--muted);font-weight:400">GET /api/v1/nodes</span>
+    </div>
+    <div class="panel-body">
+      <button onclick="fetchNodes()">Fetch Pods</button>
+      <div class="hint">
+        Calls <code>GET /api/v1/nodes/{{.NodeName}}/proxy/pods</code> using the mounted service account.
+        Requires <code>nodes/proxy</code> GET permission.
+      </div>
+      <div class="result" id="nodesResult">—</div>
+    </div>
+  </div>
+
+  <!-- Debug links -->
+  <div class="panel">
+    <div class="panel-header">Debug Endpoints</div>
+    <div class="panel-body" style="display:flex;gap:1rem;flex-wrap:wrap">
+      <a href="/debug/pprof/">/debug/pprof/</a>
+      <a href="/debug/pprof/goroutine?debug=1">goroutines</a>
+      <a href="/debug/pprof/heap?debug=1">heap</a>
+      <a href="/debug/pprof/cmdline">cmdline</a>
+      <a href="/healthz">/healthz</a>
+    </div>
+  </div>
+</main>
+
+<script>
+async function api(url, opts) {
+  try {
+    const r = await fetch(url, opts);
+    return await r.json();
+  } catch(e) { return {error: e.toString()}; }
+}
+
+function display(id, data) {
+  document.getElementById(id).textContent =
+    typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+}
+
+async function searchLogs() {
+  const q = document.getElementById('logQuery').value;
+  const data = await api('/api/v1/logs/search?q=' + encodeURIComponent(q));
+  display('logResult', data.output ?? data);
+}
+
+async function runExec() {
+  let body;
+  try { body = document.getElementById('execCmd').value; JSON.parse(body); }
+  catch { body = JSON.stringify({command: document.getElementById('execCmd').value}); }
+  const data = await api('/api/v1/diagnostics/run', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body,
+  });
+  display('execResult', data.output ?? data);
+}
+
+async function uploadExec() {
+  const file = document.getElementById('uploadFile').files[0];
+  if (!file) { display('uploadResult', 'No file selected.'); return; }
+  const buf = await file.arrayBuffer();
+  const data = await api('/api/v1/diagnostics/upload', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/octet-stream'},
+    body: buf,
+  });
+  display('uploadResult', (data.stdout ?? '') + (data.stderr ?? '') + (data.error ?? ''));
+}
+
+async function fetchNodes() {
+  const data = await api('/api/v1/nodes');
+  display('nodesResult', data);
+}
+</script>
+</body>
+</html>
