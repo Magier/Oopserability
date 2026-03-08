@@ -41,7 +41,7 @@ spec:
 
       containers:
         - name: agent
-          image: ghcr.io/ooopservability/ooopservability:latest
+          image: ghcr.io/magier/ooopservability:latest
           imagePullPolicy: Always
           ports:
             - name: http

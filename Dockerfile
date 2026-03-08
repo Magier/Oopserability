@@ -1,5 +1,8 @@
 # ── Build stage ──────────────────────────────────────────────────────────────
-FROM golang:1.22-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.22-alpine AS builder
+
+# TARGETARCH is injected by BuildKit (amd64, arm64, etc.)
+ARG TARGETARCH
 
 WORKDIR /src
 
@@ -9,11 +12,11 @@ RUN go mod download
 COPY . .
 
 # Build the agent
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w" -o /out/ooopservability .
 
 # Build the demo payload separately so it can be bundled or distributed
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w" -o /out/payload ./payload
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
