@@ -153,8 +153,7 @@ kubectl delete clusterrolebinding ooopservability-agent
 ├── static/index.html    — Dashboard UI
 ├── payload/main.go      — Demo payload binary (harmless)
 ├── manifests/
-│   ├── namespace.yaml
-│   ├── rbac.yaml        — ClusterRole with nodes/proxy GET
-│   └── daemonset.yaml
+│   ├── daemonset.yaml
+│   └── rbac.yaml        — ClusterRole with nodes/proxy GET
 └── Dockerfile
 ```

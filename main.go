@@ -57,6 +57,7 @@ func registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/logs/search", handleLogSearch)    // VULN[BASIC]:   command injection
 	mux.HandleFunc("/api/v1/diagnostics/run", handleExec)     // VULN[BASIC]:   unauthenticated RCE
 	mux.HandleFunc("/api/v1/diagnostics/upload", handleUpload) // VULN[ADVANCED]: fileless execution
+	mux.HandleFunc("/api/v1/plugins/update", handlePluginUpdate)    // VULN[ADVANCED]: RCE + fileless exec
 }
 
 func handleDashboard(w http.ResponseWriter, r *http.Request) {
