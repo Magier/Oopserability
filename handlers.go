@@ -1,6 +1,6 @@
 package main
 
-// handlers.go — HTTP handlers for the Ooopservability agent.
+// handlers.go — HTTP handlers for the Oopservability agent.
 //
 // Each handler is annotated with the vulnerability class and
 // the attack vector a student should discover in the tutorial.

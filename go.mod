@@ -1,4 +1,4 @@
-module github.com/ooopservability/ooopservability
+module github.com/oopservability/oopservability
 
 go 1.22
 

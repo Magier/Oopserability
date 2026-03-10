@@ -1,4 +1,4 @@
-// Ooopservability — Intentionally Vulnerable Observability Agent
+// Oopservability — Intentionally Vulnerable Observability Agent
 //
 // Educational tool for Kubernetes security tutorials.
 // Demonstrates the risks of over-permissive RBAC, specifically:
@@ -39,9 +39,9 @@ func main() {
 	mux.Handle("/debug/", http.DefaultServeMux)
 
 	port := envOr("PORT", "8080")
-	log.Printf("[ooopservability] agent starting  node=%s  namespace=%s  port=%s",
+	log.Printf("[oopservability] agent starting  node=%s  namespace=%s  port=%s",
 		envOr("NODE_NAME", "unknown"),
-		envOr("POD_NAMESPACE", "ooopservability"),
+		envOr("POD_NAMESPACE", "oopservability"),
 		port,
 	)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
@@ -54,10 +54,10 @@ func registerRoutes(mux *http.ServeMux) {
 	// "Observability" API
 	mux.HandleFunc("/api/v1/metrics", handleMetrics)
 	mux.HandleFunc("/api/v1/nodes", handleNodes)
-	mux.HandleFunc("/api/v1/logs/search", handleLogSearch)    // VULN[BASIC]:   command injection
-	mux.HandleFunc("/api/v1/diagnostics/run", handleExec)     // VULN[BASIC]:   unauthenticated RCE
-	mux.HandleFunc("/api/v1/diagnostics/upload", handleUpload) // VULN[ADVANCED]: fileless execution
-	mux.HandleFunc("/api/v1/plugins/update", handlePluginUpdate)    // VULN[ADVANCED]: RCE + fileless exec
+	mux.HandleFunc("/api/v1/logs/search", handleLogSearch)       // VULN[BASIC]:   command injection
+	mux.HandleFunc("/api/v1/diagnostics/run", handleExec)        // VULN[BASIC]:   unauthenticated RCE
+	mux.HandleFunc("/api/v1/diagnostics/upload", handleUpload)   // VULN[ADVANCED]: fileless execution
+	mux.HandleFunc("/api/v1/plugins/update", handlePluginUpdate) // VULN[ADVANCED]: RCE + fileless exec
 }
 
 func handleDashboard(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +67,7 @@ func handleDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	data := map[string]string{
 		"NodeName":  envOr("NODE_NAME", "unknown"),
-		"Namespace": envOr("POD_NAMESPACE", "ooopservability"),
+		"Namespace": envOr("POD_NAMESPACE", "oopservability"),
 		"Version":   "v0.1.0",
 	}
 	w.Header().Set("Content-Type", "text/html")

@@ -1,4 +1,4 @@
-// payload/main.go — Demo payload for the Ooopservability advanced tutorial track.
+// payload/main.go — Demo payload for the Oopservability advanced tutorial track.
 //
 // This is the "fileless malware" prop.  It is a harmless ELF binary that
 // prints a banner and gathers basic environment info.  Its purpose is purely

@@ -13,7 +13,7 @@ COPY . .
 
 # Build the agent
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} \
-    go build -ldflags="-s -w" -o /out/ooopservability .
+    go build -ldflags="-s -w" -o /out/oopservability .
 
 # Build the demo payload separately so it can be bundled or distributed
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} \
@@ -31,8 +31,8 @@ RUN apk add --no-cache \
       procps \
       util-linux
 
-COPY --from=builder /out/ooopservability /usr/local/bin/ooopservability
-COPY --from=builder /out/payload      /usr/local/bin/ooopservability-payload
+COPY --from=builder /out/oopservability /usr/local/bin/oopservability
+COPY --from=builder /out/payload      /usr/local/bin/oopservability-payload
 
 # Non-root user — note that memfd_create does NOT require root.
 # This reinforces the point: fileless execution works as any UID.
@@ -41,4 +41,4 @@ USER oops
 
 EXPOSE 8080
 
-ENTRYPOINT ["/usr/local/bin/ooopservability"]
+ENTRYPOINT ["/usr/local/bin/oopservability"]

