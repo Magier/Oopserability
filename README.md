@@ -116,6 +116,14 @@ kubectl port-forward -n oopservability daemonset/oopservability-agent 8080:8080
 # → http://localhost:8080
 ```
 
+## CVE-2026-47701 companion lab
+
+[`manifests/cve-2026-47701/`](manifests/cve-2026-47701/) is a separate,
+intentionally vulnerable OpenTelemetry Target Allocator exercise. It retains
+the normal Oopserability manifests above and scopes all CVE-only RBAC,
+Target Allocator, ServiceMonitor, and temporary Collector-injection material to
+its own directory. It requires the companion IKT Orchestrator workload.
+
 ## Tear Down
 
 ```bash
@@ -155,6 +163,7 @@ kubectl delete clusterrolebinding oopservability-agent
 ├── manifests/
 │   ├── daemonset.yaml
 │   └── rbac.yaml        — ClusterRole with nodes/proxy GET
+│   └── cve-2026-47701/  — isolated OTel Target Allocator workshop lab
 └── Dockerfile
 ```
 
