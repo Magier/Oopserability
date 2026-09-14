@@ -1,6 +1,6 @@
 # Oopservability
 
-**Intentionally vulnerable observability agent for Kubernetes security tutorials.**
+**Intentionally vulnerable observability agent for Kubernetes security tutorials, with a regular OpenTelemetry metrics pipeline.**
 
 > ⚠️  Do **not** deploy this in a production or shared cluster. It contains deliberate unauthenticated RCE and fileless execution capabilities.
 
@@ -8,7 +8,7 @@
 
 ## What is this?
 
-Oopservability is a fake observability DaemonSet that demonstrates a common and underappreciated attack chain in Kubernetes:
+Oopservability is a fake observability Deployment that demonstrates a common and underappreciated attack chain in Kubernetes:
 
 ```
 Over-permissive RBAC (nodes/proxy GET)
@@ -103,33 +103,44 @@ curl -X POST http://agent:8080/api/v1/diagnostics/upload \
 ## Deploy
 
 ```bash
-# Apply everything
-kubectl apply -f manifests/namespace.yaml
+# Apply the agent and its metrics pipeline
+# deployment.yaml creates the oopservability namespace and Deployment
+kubectl apply -f manifests/deployment.yaml
 kubectl apply -f manifests/rbac.yaml
-kubectl apply -f manifests/daemonset.yaml
+kubectl apply -f manifests/redis.yaml
+kubectl apply -f manifests/otel.yaml
 
 # Wait for rollout
-kubectl rollout status daemonset/oopservability-agent -n oopservability
+kubectl rollout status deployment/oopservability-agent -n oopservability
 
 # Access the dashboard (port-forward)
-kubectl port-forward -n oopservability daemonset/oopservability-agent 8080:8080
+kubectl port-forward -n oopservability deployment/oopservability-agent 8080:8080
 # → http://localhost:8080
 ```
+
+`manifests/otel.yaml` requires the Prometheus Operator `ServiceMonitor` CRD.
+It deploys a fixed OpenTelemetry Target Allocator (`v0.152.0`) and a dedicated
+Collector that scrapes the agent's `/api/v1/metrics` endpoint. The Collector
+does not mount a Kubernetes service-account token, and its ServiceMonitor does
+not reference credential files.
 
 ## CVE-2026-47701 companion lab
 
 [`manifests/cve-2026-47701/`](manifests/cve-2026-47701/) is a separate,
-intentionally vulnerable OpenTelemetry Target Allocator exercise. It retains
-the normal Oopserability manifests above and scopes all CVE-only RBAC,
-Target Allocator, ServiceMonitor, and temporary Collector-injection material to
-its own directory. It requires the companion IKT Orchestrator workload.
+intentionally vulnerable OpenTelemetry Target Allocator exercise. The regular
+pipeline above is independent of it. The CVE directory retains only the
+vulnerable allocator topology and its lab-only token receiver, cross-namespace
+ServiceMonitor write RBAC, malicious ServiceMonitor, and temporary Collector
+injection material. It requires the companion IKT Orchestrator workload.
 
 ## Tear Down
 
 ```bash
-kubectl delete namespace oooservability
+kubectl delete namespace oopservability
 kubectl delete clusterrole oopservability-agent
 kubectl delete clusterrolebinding oopservability-agent
+kubectl delete clusterrole oopservability-target-allocator
+kubectl delete clusterrolebinding oopservability-target-allocator
 ```
 
 ---
@@ -161,9 +172,11 @@ kubectl delete clusterrolebinding oopservability-agent
 ├── static/index.html    — Dashboard UI
 ├── payload/main.go      — Demo payload binary (harmless)
 ├── manifests/
-│   ├── daemonset.yaml
+│   ├── deployment.yaml  — single-replica agent Deployment
 │   └── rbac.yaml        — ClusterRole with nodes/proxy GET
-│   └── cve-2026-47701/  — isolated OTel Target Allocator workshop lab
+│   ├── redis.yaml       — single-replica Redis Deployment and Service
+│   ├── otel.yaml        — regular, fixed OTel metrics pipeline
+│   └── cve-2026-47701/  — isolated vulnerable OTel workshop lab
 └── Dockerfile
 ```
 

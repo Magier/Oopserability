@@ -1,8 +1,7 @@
-# daemonset.yaml — Deploys the Oopservability agent on every node.
+# deployment.yaml — Deploys one Oopservability agent replica.
 #
-# The DaemonSet pattern is common for observability agents (Datadog, Falco,
-# Fluentd, Node Exporter).  Running on every node makes the attack surface
-# cluster-wide — compromise one pod, compromise the whole node fleet.
+# A single Deployment is sufficient for this tutorial and avoids scheduling the
+# vulnerable agent onto every node in the cluster.
 
 apiVersion: v1
 kind: Namespace
@@ -14,7 +13,7 @@ metadata:
     app.kubernetes.io/component: tutorial
 ---
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
   name: oopservability-agent
   namespace: oopservability
@@ -22,6 +21,7 @@ metadata:
     app.kubernetes.io/name: oopservability
     app.kubernetes.io/component: agent
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: oopservability
@@ -32,13 +32,6 @@ spec:
         app.kubernetes.io/component: agent
     spec:
       serviceAccountName: oopservability-agent
-
-      # hostPID / hostNetwork are NOT set here intentionally —
-      # the nodes/proxy permission alone is the focus of the tutorial.
-      # Uncommenting these would make the agent even more dangerous.
-      # hostPID: true
-      # hostNetwork: true
-
       containers:
         - name: agent
           image: ghcr.io/magier/oopservability:sha-1bed5af
@@ -48,8 +41,8 @@ spec:
               containerPort: 8080
               protocol: TCP
           env:
-            # Expose node name so the agent can build kubelet proxy URLs.
-            # This is standard practice for DaemonSets.
+            # Expose the node selected for this single agent replica so it can
+            # build its kubelet proxy URLs.
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
@@ -67,9 +60,6 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
-          # The SA token is automatically mounted at:
-          #   /var/run/secrets/kubernetes.io/serviceaccount/token
-          # Do NOT set automountServiceAccountToken: false — that is the point.
           volumeMounts:
             - name: varlog
               mountPath: /var/log
@@ -94,18 +84,8 @@ spec:
             path: /var/log
             type: Directory
 
-      tolerations:
-        # Run on control-plane nodes too — interesting for tutorial purposes.
-        - key: node-role.kubernetes.io/control-plane
-          operator: Exists
-          effect: NoSchedule
-        - key: node-role.kubernetes.io/master
-          operator: Exists
-          effect: NoSchedule
-
 ---
-# Optional: expose the agent on every node via a NodePort for easy access
-# during the tutorial (not for production use).
+# Expose the single agent replica inside the cluster.
 apiVersion: v1
 kind: Service
 metadata:

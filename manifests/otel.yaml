@@ -1,0 +1,224 @@
+# OpenTelemetry metrics pipeline for the regular Oopservability stack.
+#
+# This intentionally uses Target Allocator v0.152.0, which includes the
+# CVE-2026-47701 fix. The vulnerable v0.151.0 deployment remains isolated in
+# manifests/cve-2026-47701 for the workshop only.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: oopservability-target-allocator
+  namespace: oopservability
+  labels:
+    app.kubernetes.io/part-of: oopservability
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: oopservability-target-allocator
+  labels:
+    app.kubernetes.io/part-of: oopservability
+rules:
+  # Discovery only: the allocator never creates or changes monitoring objects.
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["servicemonitors", "podmonitors"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: oopservability-target-allocator
+  labels:
+    app.kubernetes.io/part-of: oopservability
+subjects:
+  - kind: ServiceAccount
+    name: oopservability-target-allocator
+    namespace: oopservability
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: oopservability-target-allocator
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oopservability-target-allocator
+  namespace: oopservability
+data:
+  targetallocator.yaml: |
+    allocation_strategy: consistent-hashing
+    collector_namespace: oopservability
+    collector_selector:
+      matchLabels:
+        app.kubernetes.io/name: oopservability-otel-collector
+    prometheus_cr:
+      enabled: true
+      service_monitor_selector:
+        matchLabels:
+          app.kubernetes.io/part-of: oopservability
+      service_monitor_namespace_selector:
+        matchLabels:
+          kubernetes.io/metadata.name: oopservability
+      # The regular stack uses ServiceMonitors only.
+      pod_monitor_selector:
+        matchLabels:
+          app.kubernetes.io/component: disabled
+    config:
+      scrape_configs: []
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oopservability-target-allocator
+  namespace: oopservability
+  labels:
+    app.kubernetes.io/name: oopservability-target-allocator
+    app.kubernetes.io/part-of: oopservability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oopservability-target-allocator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oopservability-target-allocator
+        app.kubernetes.io/part-of: oopservability
+    spec:
+      serviceAccountName: oopservability-target-allocator
+      containers:
+        - name: target-allocator
+          image: ghcr.io/open-telemetry/opentelemetry-operator/target-allocator:v0.152.0
+          args: ["--config-file=/conf/targetallocator.yaml"]
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+              readOnly: true
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+          livenessProbe:
+            httpGet: {path: /livez, port: http}
+          resources:
+            requests: {cpu: 25m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 256Mi}
+      volumes:
+        - name: config
+          configMap:
+            name: oopservability-target-allocator
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oopservability-target-allocator
+  namespace: oopservability
+  labels:
+    app.kubernetes.io/part-of: oopservability
+spec:
+  selector:
+    app.kubernetes.io/name: oopservability-target-allocator
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oopservability-otel-collector
+  namespace: oopservability
+data:
+  collector.yaml: |
+    receivers:
+      prometheus:
+        config:
+          scrape_configs: []
+        target_allocator:
+          endpoint: http://oopservability-target-allocator.oopservability.svc.cluster.local:80
+          interval: 30s
+          collector_id: ${POD_NAME}
+          http_sd_config:
+            refresh_interval: 30s
+    exporters:
+      debug:
+        verbosity: basic
+    service:
+      pipelines:
+        metrics:
+          receivers: [prometheus]
+          exporters: [debug]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oopservability-otel-collector
+  namespace: oopservability
+  labels:
+    app.kubernetes.io/name: oopservability-otel-collector
+    app.kubernetes.io/component: collector
+    app.kubernetes.io/part-of: oopservability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oopservability-otel-collector
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oopservability-otel-collector
+        app.kubernetes.io/component: collector
+        app.kubernetes.io/part-of: oopservability
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.152.0
+          args: ["--config=/conf/collector.yaml"]
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests: {cpu: 25m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 256Mi}
+      volumes:
+        - name: config
+          configMap:
+            name: oopservability-otel-collector
+---
+# Requires the ServiceMonitor CRD. It scrapes the agent's existing Prometheus
+# endpoint; it carries no bearer-token file or other workload credential path.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: oopservability-agent
+  namespace: oopservability
+  labels:
+    app.kubernetes.io/part-of: oopservability
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oopservability
+  endpoints:
+    - port: http
+      path: /api/v1/metrics
+      interval: 30s
