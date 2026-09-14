@@ -207,18 +207,18 @@ spec:
 ---
 # Requires the ServiceMonitor CRD. It scrapes the agent's existing Prometheus
 # endpoint; it carries no bearer-token file or other workload credential path.
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: oopservability-agent
-  namespace: oopservability
-  labels:
-    app.kubernetes.io/part-of: oopservability
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: oopservability
-  endpoints:
-    - port: http
-      path: /api/v1/metrics
-      interval: 30s
+# apiVersion: monitoring.coreos.com/v1
+# kind: ServiceMonitor
+# metadata:
+#   name: oopservability-agent
+#   namespace: oopservability
+#   labels:
+#     app.kubernetes.io/part-of: oopservability
+# spec:
+#   selector:
+#     matchLabels:
+#       app.kubernetes.io/name: oopservability
+#   endpoints:
+#     - port: http
+#       path: /api/v1/metrics
+#       interval: 30s
