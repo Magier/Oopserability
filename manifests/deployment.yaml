@@ -34,7 +34,7 @@ spec:
       serviceAccountName: oopservability-agent
       containers:
         - name: agent
-          image: ghcr.io/magier/oopservability:sha-1bed5af
+          image: ghcr.io/magier/oopservability:latest
           imagePullPolicy: Always
           ports:
             - name: http
