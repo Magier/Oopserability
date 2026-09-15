@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Single Pain of Glass</title>
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --surface: #151925;
+      --border: #262b3a;
+      --accent: #a78bfa;
+      --green: #3ecf8e;
+      --amber: #f5b942;
+      --text: #e2e8f0;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between; height: 56px;
+    }
+    .logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -.5px; }
+    .logo span { color: var(--accent); }
+    .badge {
+      font-size: .7rem; font-weight: 600; padding: 2px 8px;
+      border-radius: 9999px; background: #3ecf8e22; color: var(--green);
+      border: 1px solid var(--green);
+    }
+    .meta { color: var(--muted); font-size: .8rem; }
+
+    main { max-width: 1100px; margin: 2rem auto; padding: 0 2rem; display: grid; gap: 1.5rem; }
+    .tagline { color: var(--muted); font-size: .9rem; }
+    .tagline strong { color: var(--text); }
+
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+    }
+    .card-label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .4rem; }
+    .card-value { font-size: 1.6rem; font-weight: 700; }
+    .card-value.green { color: var(--green); }
+    .card-value.amber { color: var(--amber); }
+    .card-value.purple { color: var(--accent); }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .panel-header {
+      padding: .8rem 1.2rem; border-bottom: 1px solid var(--border);
+      font-size: .85rem; font-weight: 600;
+    }
+    .panel-body { padding: 1.2rem; }
+    .quote { font-style: italic; color: var(--muted); }
+    footer { text-align: center; color: var(--muted); font-size: .75rem; padding: 2rem 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="logo">Single <span>Pain</span> of Glass</div>
+    <span class="badge">● ALL SYSTEMS NOMINAL</span>
+  </div>
+  <div class="meta">uptime: {{.Uptime}}</div>
+</header>
+
+<main>
+  <p class="tagline">One dashboard to rule them all. <strong>247</strong> data sources unified into a single view nobody has time to look at.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Dashboards Created</div>
+      <div class="card-value purple">312</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Dashboards Actually Used</div>
+      <div class="card-value amber">1</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Alerts Fired Today</div>
+      <div class="card-value green">Yes</div>
+    </div>
+    <div class="card">
+      <div class="card-label">On-Call Sanity</div>
+      <div class="card-value amber">12%</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Root Cause Identified</div>
+      <div class="card-value green">Probably</div>
+    </div>
+    <div class="card">
+      <div class="card-label">MTTR</div>
+      <div class="card-value">it's complicated</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">Executive Summary</div>
+    <div class="panel-body">
+      <p class="quote">"Everything is observable. Nothing is understood."</p>
+    </div>
+  </div>
+</main>
+
+<footer>Single Pain of Glass — now with 30% more panes.</footer>
+</body>
+</html>

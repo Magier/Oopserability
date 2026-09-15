@@ -20,6 +20,11 @@ Over-permissive RBAC (nodes/proxy GET)
 
 The service looks like a legitimate metrics/log scraper. It is not.
 
+Deployed alongside it is [**Single Pain of Glass**](spog/), a boring,
+hardened, purely cosmetic dashboard with no RBAC and nothing worth
+attacking — it exists only to look like a real observability tool next to
+the vulnerable agent.
+
 ---
 
 ## Attack Tracks
@@ -109,13 +114,19 @@ kubectl apply -f manifests/agent.yaml
 kubectl apply -f manifests/rbac.yaml
 kubectl apply -f manifests/redis.yaml
 kubectl apply -f manifests/otel.yaml
+kubectl apply -f manifests/spog.yaml
 
 # Wait for rollout
 kubectl rollout status daemonset/oopservability-agent -n oopservability
+kubectl rollout status deployment/single-pane-of-glass -n oopservability
 
-# Access the dashboard (port-forward)
-kubectl port-forward -n oopservability deployment/oopservability-agent 8080:8080
+# Access the agent dashboard (port-forward)
+kubectl port-forward -n oopservability daemonset/oopservability-agent 8080:8080
 # → http://localhost:8080
+
+# Access the legit-looking neighbor
+kubectl port-forward -n oopservability deployment/single-pane-of-glass 8081:8080
+# → http://localhost:8081
 ```
 
 `manifests/otel.yaml` requires the Prometheus Operator `ServiceMonitor` CRD.
@@ -171,12 +182,17 @@ kubectl delete clusterrolebinding oopservability-target-allocator
 │   ├── fileless_linux.go    — memfd_create fileless exec (Linux)
 │   ├── fileless_stub.go     — Non-Linux stub
 │   └── static/index.html    — Dashboard UI
+├── spog/
+│   ├── main.go              — Cosmetic HTTP server, no real data
+│   ├── static/index.html    — "Single Pain of Glass" dashboard UI
+│   └── Dockerfile
 ├── payload/main.go      — Demo payload binary (harmless)
 ├── manifests/
 │   ├── agent.yaml       — namespace + agent DaemonSet + Service
 │   └── rbac.yaml        — ClusterRole with nodes/proxy GET
 │   ├── redis.yaml       — single-replica Redis Deployment and Service
 │   ├── otel.yaml        — regular, fixed OTel metrics pipeline
+│   ├── spog.yaml        — Single Pain of Glass Deployment and Service
 │   └── cve-2026-47701/  — isolated vulnerable OTel workshop lab
 └── Dockerfile
 ```

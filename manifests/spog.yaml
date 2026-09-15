@@ -1,0 +1,80 @@
+# spog.yaml — "Single Pain of Glass", the legit-looking neighbor.
+#
+# A boring, hardened, single-replica Deployment that exists purely for
+# contrast: this is what a real observability tool's manifest looks like
+# next to the agent's DaemonSet + nodes/proxy ClusterRole. It has no RBAC,
+# no host mounts, and nothing worth attacking.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: single-pane-of-glass
+  namespace: oopservability
+  labels:
+    app.kubernetes.io/name: single-pane-of-glass
+    app.kubernetes.io/component: dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: single-pane-of-glass
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: single-pane-of-glass
+        app.kubernetes.io/component: dashboard
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: dashboard
+          image: ghcr.io/magier/single-pane-of-glass:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "8080"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: single-pane-of-glass
+  namespace: oopservability
+  labels:
+    app.kubernetes.io/name: single-pane-of-glass
+spec:
+  selector:
+    app.kubernetes.io/name: single-pane-of-glass
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
