@@ -1,7 +1,8 @@
-# deployment.yaml — Deploys one Oopservability agent replica.
+# agent.yaml — Deploys the Oopservability agent as a DaemonSet.
 #
-# A single Deployment is sufficient for this tutorial and avoids scheduling the
-# vulnerable agent onto every node in the cluster.
+# One pod per node, like a real node-level observability agent — which is
+# also what makes the nodes/proxy RBAC pivot (Track 2) available from
+# wherever the attacker lands.
 
 apiVersion: v1
 kind: Namespace
@@ -13,7 +14,7 @@ metadata:
     app.kubernetes.io/component: tutorial
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: oopservability-agent
   namespace: oopservability
@@ -21,7 +22,6 @@ metadata:
     app.kubernetes.io/name: oopservability
     app.kubernetes.io/component: agent
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: oopservability
@@ -41,8 +41,8 @@ spec:
               containerPort: 8080
               protocol: TCP
           env:
-            # Expose the node selected for this single agent replica so it can
-            # build its kubelet proxy URLs.
+            # Expose the node this pod landed on so it can build its own
+            # kubelet proxy URLs.
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
@@ -85,7 +85,7 @@ spec:
             type: Directory
 
 ---
-# Expose the single agent replica inside the cluster.
+# Expose the agent DaemonSet inside the cluster (round-robins across nodes).
 apiVersion: v1
 kind: Service
 metadata:

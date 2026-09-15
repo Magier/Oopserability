@@ -104,14 +104,14 @@ curl -X POST http://agent:8080/api/v1/diagnostics/upload \
 
 ```bash
 # Apply the agent and its metrics pipeline
-# deployment.yaml creates the oopservability namespace and Deployment
-kubectl apply -f manifests/deployment.yaml
+# agent.yaml creates the oopservability namespace and the agent DaemonSet
+kubectl apply -f manifests/agent.yaml
 kubectl apply -f manifests/rbac.yaml
 kubectl apply -f manifests/redis.yaml
 kubectl apply -f manifests/otel.yaml
 
 # Wait for rollout
-kubectl rollout status deployment/oopservability-agent -n oopservability
+kubectl rollout status daemonset/oopservability-agent -n oopservability
 
 # Access the dashboard (port-forward)
 kubectl port-forward -n oopservability deployment/oopservability-agent 8080:8080
@@ -129,7 +129,7 @@ not reference credential files.
 [`manifests/cve-2026-47701/`](manifests/cve-2026-47701/) is a separate,
 intentionally vulnerable OpenTelemetry Target Allocator exercise. The regular
 pipeline above is independent of it. The CVE directory retains only the
-vulnerable allocator topology and its lab-only token receiver, cross-namespace
+vulnerable allocator topology and its lab-only metric receiver, cross-namespace
 ServiceMonitor write RBAC, malicious ServiceMonitor, and temporary Collector
 injection material. It requires the companion IKT Orchestrator workload.
 
@@ -162,17 +162,18 @@ kubectl delete clusterrolebinding oopservability-target-allocator
 
 ```
 .
-├── main.go              — HTTP server, routes, embedded dashboard
-├── handlers.go          — Vulnerable HTTP handlers
-├── kubelet.go           — Kubelet API client (nodes/proxy)
-├── httpclient.go        — Shared HTTP client (insecure TLS)
-├── exec_helper.go       — exec.Cmd helper
-├── fileless_linux.go    — memfd_create fileless exec (Linux)
-├── fileless_stub.go     — Non-Linux stub
-├── static/index.html    — Dashboard UI
+├── agent/
+│   ├── main.go              — HTTP server, routes, embedded dashboard
+│   ├── handlers.go          — Vulnerable HTTP handlers
+│   ├── kubelet.go           — Kubelet API client (nodes/proxy)
+│   ├── httpclient.go        — Shared HTTP client (insecure TLS)
+│   ├── exec_helper.go       — exec.Cmd helper
+│   ├── fileless_linux.go    — memfd_create fileless exec (Linux)
+│   ├── fileless_stub.go     — Non-Linux stub
+│   └── static/index.html    — Dashboard UI
 ├── payload/main.go      — Demo payload binary (harmless)
 ├── manifests/
-│   ├── deployment.yaml  — single-replica agent Deployment
+│   ├── agent.yaml       — namespace + agent DaemonSet + Service
 │   └── rbac.yaml        — ClusterRole with nodes/proxy GET
 │   ├── redis.yaml       — single-replica Redis Deployment and Service
 │   ├── otel.yaml        — regular, fixed OTel metrics pipeline

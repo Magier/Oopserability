@@ -13,7 +13,7 @@ COPY . .
 
 # Build the agent
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} \
-    go build -ldflags="-s -w" -o /out/oopservability .
+    go build -ldflags="-s -w" -o /out/oopservability ./agent
 
 # Build the demo payload separately so it can be bundled or distributed
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} \
