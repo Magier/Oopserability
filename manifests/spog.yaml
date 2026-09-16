@@ -4,7 +4,13 @@
 # contrast: this is what a real observability tool's manifest looks like
 # next to the agent's DaemonSet + nodes/proxy ClusterRole. It has no RBAC,
 # no host mounts, and nothing worth attacking.
-
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oopservability
+  labels:
+    app.kubernetes.io/name: oopservability
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
