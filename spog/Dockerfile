@@ -18,8 +18,8 @@ FROM alpine:3.19
 
 COPY --from=builder /out/single-pane-of-glass /usr/local/bin/single-pane-of-glass
 
-RUN addgroup -S spog && adduser -S spog -G spog
-USER spog
+RUN addgroup -S -g 65532 spog && adduser -S -u 65532 -G spog spog
+USER 65532
 
 EXPOSE 8080
 
