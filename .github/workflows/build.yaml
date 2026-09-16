@@ -9,9 +9,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_AGENT: ghcr.io/${{ github.repository_owner }}/oopservability
-  IMAGE_REDIS: ghcr.io/${{ github.repository_owner }}/oopservability-redis
-  IMAGE_SPOG: ghcr.io/${{ github.repository_owner }}/spog
 
 jobs:
   build:
@@ -19,6 +16,23 @@ jobs:
     permissions:
       contents: read
       packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - workload: agent
+            image: oopservability
+            context: .
+            file: Dockerfile
+          - workload: redis
+            image: oopservability-redis
+            context: ./redis
+            file: redis/Dockerfile
+          - workload: spog
+            image: spog
+            context: .
+            file: spog/Dockerfile
 
     steps:
       - uses: actions/checkout@v4
@@ -34,11 +48,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (agent)
-        id: meta-agent
+      - name: Extract metadata (${{ matrix.workload }})
+        id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_AGENT }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -46,60 +60,14 @@ jobs:
             type=sha,prefix=sha-,format=short
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push (agent)
+      - name: Build and push (${{ matrix.workload }})
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta-agent.outputs.tags }}
-          labels: ${{ steps.meta-agent.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Extract metadata (redis)
-        id: meta-redis
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_REDIS }}
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=sha-,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push (redis)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./redis
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta-redis.outputs.tags }}
-          labels: ${{ steps.meta-redis.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Extract metadata (spog)
-        id: meta-spog
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_SPOG }}
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=sha-,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push (spog)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./spog/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta-spog.outputs.tags }}
-          labels: ${{ steps.meta-spog.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.workload }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.workload }}
