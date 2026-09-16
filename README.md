@@ -118,14 +118,14 @@ kubectl apply -f manifests/spog.yaml
 
 # Wait for rollout
 kubectl rollout status daemonset/oopservability-agent -n oopservability
-kubectl rollout status deployment/single-pane-of-glass -n oopservability
+kubectl rollout status deployment/spog -n oopservability
 
 # Access the agent dashboard (port-forward)
 kubectl port-forward -n oopservability daemonset/oopservability-agent 8080:8080
 # → http://localhost:8080
 
 # Access the legit-looking neighbor
-kubectl port-forward -n oopservability deployment/single-pane-of-glass 8081:8080
+kubectl port-forward -n oopservability deployment/spog 8081:8080
 # → http://localhost:8081
 ```
 

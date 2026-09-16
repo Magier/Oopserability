@@ -11,6 +11,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_AGENT: ghcr.io/${{ github.repository_owner }}/oopservability
   IMAGE_REDIS: ghcr.io/${{ github.repository_owner }}/oopservability-redis
+  IMAGE_SPOG: ghcr.io/${{ github.repository_owner }}/spog
 
 jobs:
   build:
@@ -76,5 +77,29 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta-redis.outputs.tags }}
           labels: ${{ steps.meta-redis.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata (spog)
+        id: meta-spog
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_SPOG }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push (spog)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./spog/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-spog.outputs.tags }}
+          labels: ${{ steps.meta-spog.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
